@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
@@ -15,21 +14,16 @@ class OrderItem extends Model
         'food_id',
         'quantity',
         'price',
-        'subtotal'
+        'subtotal',
     ];
 
-    protected $casts = [
-        'price' => 'decimal:2',
-        'subtotal' => 'decimal:2',
-    ];
-
-    public function order(): BelongsTo
+    public function order()
     {
         return $this->belongsTo(Order::class);
     }
 
-    public function food(): BelongsTo
+    public function food()
     {
-        return $this->belongsTo(Food::class);
+        return $this->belongsTo(Food::class); // giả sử bạn đã có model Food
     }
 }

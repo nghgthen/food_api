@@ -4,194 +4,79 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class OrderController extends Controller
 {
-    use AuthorizesRequests;
-
-    /**
-     * Display a listing of the orders.
-     */
+    // Lấy danh sách tất cả đơn hàng
     public function index()
     {
-        $this->authorize('viewAny', Order::class);
-
-        $orders = Order::with(['user', 'items'])->latest()->paginate(10);
-        
-        return view('orders.index', compact('orders'));
+        $orders = Order::with('items.food')->get();
+        return response()->json($orders);
     }
 
-    /**
-     * Show the form for creating a new order.
-     */
-    public function create()
-    {
-        $this->authorize('create', Order::class);
-
-        $users = User::all();
-        return view('orders.create', compact('users'));
-    }
-
-    /**
-     * Store a newly created order in storage.
-     */
+    // Lưu đơn hàng từ Flutter
     public function store(Request $request)
     {
-        $this->authorize('create', Order::class);
-
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'total_amount' => 'required|numeric|min:0',
-            'status' => 'required|in:pending,processing,completed,cancelled',
-            'shipping_address' => 'required|string|max:500',
-            'payment_method' => 'required|in:credit_card,paypal,cash_on_delivery',
-            'payment_status' => 'required|in:pending,paid,failed'
+        $request->validate([
+            'shipping_address' => 'required|string',
+            'payment_method' => 'required|string',
+            'items' => 'required|array|min:1',
+            'items.*.food_id' => 'required|exists:foods,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.price' => 'required|numeric',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+        // lấy user_id từ token đăng nhập (không cần client gửi)
+        $userId = auth()->id();
+
+        $totalAmount = 0;
+        $itemsData = [];
+
+        foreach ($request->items as $item) {
+            $subtotal = $item['price'] * $item['quantity'];
+            $totalAmount += $subtotal;
+
+            $itemsData[] = [
+                'food_id' => $item['food_id'],
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
+                'subtotal' => $subtotal,
+            ];
         }
+        $totalAmount += 0.99;
 
-        $order = Order::create($request->all());
-
-        return redirect()->route('orders.show', $order->id)
-            ->with('success', 'Order created successfully.');
-    }
-
-    /**
-     * Display the specified order.
-     */
-    public function show(Order $order)
-    {
-        $this->authorize('view', $order);
-
-        $order->load(['user', 'items.product']);
-        return view('orders.show', compact('order'));
-    }
-
-    /**
-     * Show the form for editing the specified order.
-     */
-    public function edit(Order $order)
-    {
-        $this->authorize('update', $order);
-
-        $users = User::all();
-        return view('orders.edit', compact('order', 'users'));
-    }
-
-    /**
-     * Update the specified order in storage.
-     */
-    public function update(Request $request, Order $order)
-    {
-        $this->authorize('update', $order);
-
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'total_amount' => 'required|numeric|min:0',
-            'status' => 'required|in:pending,processing,completed,cancelled',
-            'shipping_address' => 'required|string|max:500',
-            'payment_method' => 'required|in:credit_card,paypal,cash_on_delivery',
-            'payment_status' => 'required|in:pending,paid,failed'
+        $order = Order::create([
+            'user_id' => $userId,
+            'total_amount' => $totalAmount,
+            'status' => 'pending',
+            'shipping_address' => $request->shipping_address,
+            'payment_method' => $request->payment_method,
+            'payment_status' => 'unpaid',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        $order->update($request->all());
-
-        return redirect()->route('orders.show', $order->id)
-            ->with('success', 'Order updated successfully.');
-    }
-
-    /**
-     * Remove the specified order from storage.
-     */
-    public function destroy(Order $order)
-    {
-        $this->authorize('delete', $order);
-
-        $order->delete();
-
-        return redirect()->route('orders.index')
-            ->with('success', 'Order deleted successfully.');
-    }
-
-    /**
-     * Display orders for the authenticated user.
-     */
-    public function myOrders()
-    {
-        $orders = Order::where('user_id', Auth::id())
-            ->with('items')
-            ->latest()
-            ->paginate(10);
-
-        return view('orders.my-orders', compact('orders'));
-    }
-
-    /**
-     * Update order status.
-     */
-    public function updateStatus(Request $request, Order $order)
-    {
-        $this->authorize('updateStatus', $order);
-
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,processing,completed,cancelled'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid status value'
-            ], 422);
-        }
-
-        $order->status = $request->status;
-        $order->save();
+        $order->items()->createMany($itemsData);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Order status updated successfully'
-        ]);
+            'message' => 'Order created successfully',
+            'order' => $order->load('items.food')
+        ], 201);
     }
 
-    /**
-     * Update payment status.
-     */
-    public function updatePaymentStatus(Request $request, Order $order)
+    // Lấy chi tiết đơn hàng theo ID
+    public function show($id)
     {
-        $this->authorize('updatePaymentStatus', $order);
+        $order = Order::with('items.food')->findOrFail($id);
+        return response()->json($order);
+    }
 
-        $validator = Validator::make($request->all(), [
-            'payment_status' => 'required|in:pending,paid,failed'
-        ]);
+    // Lấy danh sách đơn hàng theo user
+    public function userOrders($userId)
+    {
+        $orders = Order::with('items.food')
+            ->where('user_id', $userId)
+            ->get();
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid payment status value'
-            ], 422);
-        }
-
-        $order->payment_status = $request->payment_status;
-        $order->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment status updated successfully'
-        ]);
+        return response()->json($orders);
     }
 }

@@ -44,7 +44,7 @@ class OrderController extends Controller
                 'subtotal' => $subtotal,
             ];
         }
-        $totalAmount += 0.99;
+        $totalAmount += 15000;
 
         $order = Order::create([
             'user_id' => $userId,

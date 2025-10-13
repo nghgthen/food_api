@@ -11,10 +11,11 @@ class FoodSeeder extends Seeder
 {
     public function run(): void
     {
-        // Xóa dữ liệu cũ nếu có
-        DB::table('foods')->truncate();
+        // Xóa dữ liệu cũ
+       DB::table('foods')->delete();
 
-        // Lấy các category để lấy ID
+
+        // Lấy ID của các danh mục
         $burgerCategory = Category::where('slug', 'burger')->first();
         $pizzaCategory = Category::where('slug', 'pizza')->first();
         $sushiCategory = Category::where('slug', 'sushi')->first();
@@ -23,114 +24,114 @@ class FoodSeeder extends Seeder
         $saladCategory = Category::where('slug', 'salad')->first();
 
         $foods = [
-            // Salad foods
+            // Salad
             [
-                'name' => 'Fried Egg',
+                'name' => 'Trứng chiên đặc biệt',
                 'image' => 'foods/fried_egg.png',
-                'price' => 15.06,
+                'price' => 35000,
                 'rating' => 4.3,
                 'review_count' => 2005,
-                'description' => 'Delicious fried egg with special sauce',
+                'description' => 'Trứng chiên vàng giòn, ăn kèm nước sốt đặc biệt hấp dẫn.',
                 'category_id' => $saladCategory->id,
                 'is_popular' => true,
             ],
             [
-                'name' => 'Mixed Vegetable',
+                'name' => 'Rau trộn tươi ngon',
                 'image' => 'foods/mixed_vegetable.png',
-                'price' => 17.03,
+                'price' => 42000,
                 'rating' => 4.3,
                 'review_count' => 100,
-                'description' => 'Fresh mixed vegetables with special dressing',
+                'description' => 'Rau củ tươi xanh, trộn cùng sốt mè rang đặc trưng.',
                 'category_id' => $saladCategory->id,
                 'is_popular' => false,
             ],
 
-            // Burger foods
+            // Burger
             [
-                'name' => 'Classic Burger',
+                'name' => 'Burger bò cổ điển',
                 'image' => 'foods/burger.png',
-                'price' => 5.99,
+                'price' => 65000,
                 'rating' => 4.9,
                 'review_count' => 1500,
-                'description' => 'Juicy beef burger with cheese and vegetables',
+                'description' => 'Bánh burger nhân bò nướng mọng nước, kèm phô mai và rau tươi.',
                 'category_id' => $burgerCategory->id,
                 'is_popular' => true,
             ],
             [
-                'name' => 'Cheese Burger',
+                'name' => 'Burger phô mai đặc biệt',
                 'image' => 'foods/cheese_burger.png',
-                'price' => 6.99,
+                'price' => 69000,
                 'rating' => 4.7,
                 'review_count' => 1200,
-                'description' => 'Burger with extra cheese and special sauce',
+                'description' => 'Burger nhân bò với lớp phô mai tan chảy và sốt đậm đà.',
                 'category_id' => $burgerCategory->id,
                 'is_popular' => true,
             ],
 
-            // Pizza foods
+            // Pizza
             [
-                'name' => 'Via Napoli Pizzeria',
+                'name' => 'Pizza hải sản Napoli',
                 'image' => 'foods/pizza.png',
-                'price' => 8.5,
+                'price' => 95000,
                 'rating' => 4.8,
                 'review_count' => 1200,
-                'description' => 'Delicious pizza with various toppings',
+                'description' => 'Pizza hải sản thơm ngon với phô mai mozzarella béo ngậy.',
                 'category_id' => $pizzaCategory->id,
                 'is_popular' => true,
             ],
             [
-                'name' => 'Margherita Pizza',
+                'name' => 'Pizza Margherita truyền thống',
                 'image' => 'foods/margherita.png',
-                'price' => 7.5,
+                'price' => 89000,
                 'rating' => 4.6,
                 'review_count' => 900,
-                'description' => 'Classic pizza with tomato and mozzarella',
+                'description' => 'Pizza cà chua và phô mai đơn giản nhưng đậm vị Ý.',
                 'category_id' => $pizzaCategory->id,
                 'is_popular' => false,
             ],
 
-            // Sushi foods
+            // Sushi
             [
-                'name' => 'Salmon Sushi',
+                'name' => 'Sushi cá hồi tươi',
                 'image' => 'foods/sushi.png',
-                'price' => 12.99,
+                'price' => 120000,
                 'rating' => 4.5,
                 'review_count' => 800,
-                'description' => 'Fresh salmon sushi with rice and seaweed',
+                'description' => 'Sushi cá hồi tươi ngon, kết hợp cơm giấm và rong biển thơm.',
                 'category_id' => $sushiCategory->id,
                 'is_popular' => true,
             ],
 
-            // Cake foods
+            // Bánh ngọt
             [
-                'name' => 'Chocolate Cake',
+                'name' => 'Bánh kem socola',
                 'image' => 'foods/chocolate_cake.png',
-                'price' => 4.99,
+                'price' => 45000,
                 'rating' => 4.8,
                 'review_count' => 1300,
-                'description' => 'Rich chocolate cake with cream frosting',
+                'description' => 'Bánh socola mềm mịn, phủ kem tươi ngọt ngào.',
                 'category_id' => $cakeCategory->id,
                 'is_popular' => false,
             ],
 
-            // Drinks foods
+            // Đồ uống
             [
-                'name' => 'Fresh Orange Juice',
+                'name' => 'Nước cam ép tươi',
                 'image' => 'foods/orange_juice.png',
-                'price' => 3.5,
+                'price' => 30000,
                 'rating' => 4.4,
                 'review_count' => 600,
-                'description' => 'Freshly squeezed orange juice',
+                'description' => 'Nước cam tươi nguyên chất, giàu vitamin C và sảng khoái.',
                 'category_id' => $drinksCategory->id,
                 'is_popular' => false,
             ],
             [
-                'name' => 'Iced Coffee',
+                'name' => 'Cà phê sữa đá',
                 'image' => 'foods/iced_coffee.png',
-                'price' => 4.0,
+                'price' => 35000,
                 'rating' => 4.6,
                 'review_count' => 750,
-                'description' => 'Cold coffee with milk and ice',
+                'description' => 'Cà phê rang xay đậm vị, pha cùng sữa đặc và đá mát lạnh.',
                 'category_id' => $drinksCategory->id,
                 'is_popular' => true,
             ],
@@ -140,7 +141,7 @@ class FoodSeeder extends Seeder
             Food::create($food);
         }
 
-        $this->command->info('Foods seeded successfully!');
-        $this->command->info('Total foods: ' . count($foods));
+        $this->command->info('Đã seed dữ liệu món ăn thành công!');
+        $this->command->info('Tổng số món ăn: ' . count($foods));
     }
 }

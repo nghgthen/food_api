@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -49,7 +50,7 @@ class OrderController extends Controller
         $order = Order::create([
             'user_id' => $userId,
             'total_amount' => $totalAmount,
-            'status' => 'pending',
+            'status' => 'shipped',
             'shipping_address' => $request->shipping_address,
             'payment_method' => $request->payment_method,
             'payment_status' => 'unpaid',
@@ -78,5 +79,53 @@ class OrderController extends Controller
             ->get();
 
         return response()->json($orders);
+    }
+
+    // Cập nhật trạng thái đơn hàng (cho người dùng xác nhận đã nhận)
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|string|in:pending,processing,shipped,completed,cancelled'
+        ]);
+
+        $order = Order::findOrFail($id);
+
+        // Kiểm tra quyền: chỉ user sở hữu order mới có thể cập nhật
+        if (Auth::id() !== $order->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.'
+            ], 403);
+        }
+
+        // User chỉ có thể cập nhật từ 'shipped' hoặc 'processing' sang 'completed'
+        if (!in_array($order->status, ['processing', 'shipped'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order cannot be updated to completed from current status.'
+            ], 422);
+        }
+
+        if ($request->status !== 'completed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only confirm receipt (set status to completed).'
+            ], 422);
+        }
+
+        $order->status = $request->status;
+        
+        // Cập nhật payment_status nếu chưa thanh toán
+        if ($order->payment_status === 'unpaid') {
+            $order->payment_status = 'paid';
+        }
+        
+        $order->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order status updated successfully',
+            'order' => $order->load('items.food')
+        ]);
     }
 }
